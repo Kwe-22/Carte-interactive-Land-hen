@@ -35,8 +35,8 @@ var POIS = [
     id: 'mairie',
     nom: 'Mairie de Landéhen',
     icone: '🏛️',
-    position: [48.43025, -2.5390],
-    positionApprox: true,
+    position: [48.42981, -2.53994],  // Plus Code CFH6+W2
+    positionApprox: false,
     adresse: '7 place du Bourg, 22400 Landéhen',
     photo: null,
     horaires: [
