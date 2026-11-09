@@ -14,6 +14,7 @@
 //   photo       chemin ou URL d'une image (ex. "photos/mairie.jpg")
 //   horaires    7 valeurs, de lundi à dimanche
 //               (texte, "Fermé", ou null si inconnu)
+//   siteWeb     adresse complète du site (ex. "https://www.landehen.fr")
 //   telephone   texte (ex. "02 96 30 03 21")
 //   note        remarque affichée en bas du panneau (ex. info à vérifier)
 // ---------------------------------------------------------------
@@ -48,6 +49,7 @@ var POIS = [
       '9h00 – 12h00',
       'Fermé'
     ],
+    siteWeb: 'http://www.landehen.fr',
     telephone: '02 96 30 03 21',
     note: null
   },

@@ -121,6 +121,20 @@ function renderPoi(poi) {
     body.appendChild(todo());
   }
 
+  // Site internet (seuls les liens http/https sont acceptés)
+  body.appendChild(section('Site internet'));
+  if (poi.siteWeb && /^https?:\/\//i.test(poi.siteWeb)) {
+    var pw = el('p');
+    var aw = el('a', null, poi.siteWeb.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+    aw.href = poi.siteWeb;
+    aw.target = '_blank';
+    aw.rel = 'noopener noreferrer';
+    pw.appendChild(aw);
+    body.appendChild(pw);
+  } else {
+    body.appendChild(todo());
+  }
+
   // Téléphone
   body.appendChild(section('Téléphone'));
   if (poi.telephone) {
