@@ -55,8 +55,8 @@ var POIS = [
     id: 'boulangerie',
     nom: 'Boulangerie Romelie',
     icone: '🥖',
-    position: [48.4299, -2.5384],
-    positionApprox: true,
+    position: [48.42994, -2.54056],  // Plus Code CFH5+XQ
+    positionApprox: false,
     adresse: '2 rue de Mauny, 22400 Landéhen',
     photo: null,
     horaires: [
