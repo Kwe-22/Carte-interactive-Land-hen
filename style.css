@@ -1,0 +1,67 @@
+html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+#map { height: 100%; width: 100%; background: #1f1f1f; }
+
+#message {
+  position: absolute; z-index: 1000; top: 12px; left: 50%;
+  transform: translateX(-50%); padding: 8px 14px; border-radius: 6px;
+  background: #fff; font-size: 14px; line-height: 1.3;
+  box-shadow: 0 1px 6px rgba(0,0,0,.35); display: none;
+}
+
+/* Marqueurs des POI */
+.poi-icon span {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #fff; border: 2px solid #e63946;
+  font-size: 19px; box-shadow: 0 1px 5px rgba(0,0,0,.5);
+  cursor: pointer;
+}
+.poi-icon span:hover { transform: scale(1.12); }
+
+/* Panneau d'informations (à droite) */
+#panel {
+  position: absolute; z-index: 1100; top: 0; right: 0; bottom: 0;
+  width: 340px; max-width: 100%; box-sizing: border-box;
+  background: #fff; color: #1d1d1f; overflow-y: auto;
+  box-shadow: -2px 0 12px rgba(0,0,0,.35);
+  transform: translateX(105%); transition: transform .25s ease;
+  visibility: hidden;
+}
+#panel.open { transform: translateX(0); visibility: visible; }
+
+#panel-close {
+  position: absolute; top: 10px; right: 10px; width: 34px; height: 34px;
+  border: 0; border-radius: 50%; background: rgba(255,255,255,.92);
+  font-size: 20px; line-height: 1; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+#panel-close:hover { background: #eee; }
+
+.panel-photo { width: 100%; height: 190px; object-fit: cover; display: block; }
+.panel-nophoto {
+  height: 120px; display: flex; align-items: center; justify-content: center;
+  background: #ececec; color: #777; font-size: 14px;
+}
+.panel-body { padding: 16px 18px 24px; }
+.panel-body h2 { margin: 0 0 14px; font-size: 21px; line-height: 1.25; }
+.panel-body h3 {
+  margin: 18px 0 4px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .06em; color: #666;
+}
+.panel-body p { margin: 0; font-size: 15px; }
+.panel-body a { color: #0b57d0; }
+.todo { color: #888; font-style: italic; }
+
+.hours { border-collapse: collapse; width: 100%; font-size: 14px; }
+.hours td { padding: 3px 0; vertical-align: top; }
+.hours td:first-child { width: 90px; color: #555; }
+.hours tr.today td { font-weight: 700; color: #1d1d1f; }
+
+.note {
+  margin-top: 20px; padding: 9px 11px; border-radius: 6px;
+  background: #fff4e0; color: #6b4a00; font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  #panel { width: 100%; }
+}
