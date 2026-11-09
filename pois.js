@@ -75,8 +75,8 @@ var POIS = [
     id: 'bar-epicerie',
     nom: 'Bar-épicerie',
     icone: '🍺',
-    position: [48.4305, -2.5396],
-    positionApprox: true,
+    position: [48.42906, -2.53906],  // Plus Code CFH6+J9
+    positionApprox: false,
     adresse: null,
     photo: null,
     horaires: null,
