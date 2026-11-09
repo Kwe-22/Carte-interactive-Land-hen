@@ -53,7 +53,7 @@ var POIS = [
   },
   {
     id: 'boulangerie',
-    nom: 'Boulangerie',
+    nom: 'Boulangerie Romelie',
     icone: '🥖',
     position: [48.4299, -2.5384],
     positionApprox: true,
@@ -68,8 +68,8 @@ var POIS = [
       '7h30 – 13h30 / 15h30 – 19h00',
       '7h30 – 13h00'
     ],
-    telephone: '02 96 30 03 49',
-    note: 'Nom, téléphone et horaires à vérifier : les annuaires consultés se contredisent.'
+    telephone: null,
+    note: 'Nom et adresse confirmés. Horaires issus d\'un annuaire en ligne, à vérifier. Téléphone à compléter.'
   },
   {
     id: 'bar-epicerie',
