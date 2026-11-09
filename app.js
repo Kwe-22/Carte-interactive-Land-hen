@@ -1,6 +1,7 @@
 // Landéhen – code INSEE 22098
 var CODE_INSEE = '22098';
-var EGLISE = [48.4302, -2.5392];   // centre de la vue (église Saint-Guihen, position approximative)
+// Centre de la vue : position de l'église, lue dans pois.js
+var EGLISE = POIS.filter(function (p) { return p.id === 'eglise'; })[0].position;
 var ZOOM_FACTOR = 3;               // vue initiale 3 fois plus zoomée que la commune entière
 
 var JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];

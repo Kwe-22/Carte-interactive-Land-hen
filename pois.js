@@ -23,8 +23,8 @@ var POIS = [
     id: 'eglise',
     nom: 'Église Saint-Guihen',
     icone: '⛪',
-    position: [48.4302, -2.5392],
-    positionApprox: true,
+    position: [48.42944, -2.54056],  // Plus Code CFH5+QQ
+    positionApprox: false,
     adresse: null,
     photo: null,
     horaires: null,
