@@ -27,7 +27,7 @@ var CATEGORIES = [
   { id: 'artisans',      nom: 'Artisans et services professionnels', couleur: '#3977C3' },  // bleu
   { id: 'services',      nom: 'Services',                            couleur: '#168C8C' },  // turquoise
   { id: 'associations',  nom: 'Associations et vie locale',          couleur: '#8B5FBF' },  // violet
-  { id: 'loisirs',       nom: 'Loisirs et sport',                    couleur: '#4E9A51' },  // vert
+  { id: 'loisirs',       nom: 'Loisirs et sport',                    couleur: '#D9A514' },  // jaune doré
   { id: 'patrimoine',    nom: 'Patrimoine',                          couleur: '#C6534B' }   // rouge brique
 ];
 
