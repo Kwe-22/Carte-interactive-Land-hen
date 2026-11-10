@@ -37,7 +37,7 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
 /* Bouton actif : rempli de la couleur de la catégorie (couleur du texte choisie par app.js selon le contraste) */
 .cat-btn[aria-pressed="true"] { background: var(--cat); color: var(--cat-text, #fff); }
 .cat-btn[aria-pressed="true"] .count { background: rgba(255,255,255,.28); color: inherit; }
-.cat-btn[aria-pressed="true"].dark-text .count { background: rgba(0,0,0,.12); }
+.cat-btn[aria-pressed="true"].dark-text .count { background: rgba(255,255,255,.7); color: #1d1d1f; }
 
 #category-empty {
   pointer-events: auto; padding: 8px 12px; border-radius: 8px; background: #fff; font-size: 14px;
