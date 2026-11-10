@@ -7,7 +7,7 @@
 //
 //   id          identifiant unique (sans espace)
 //   nom         nom affiché
-//   icone       emoji affiché sur la carte
+//   icone       emoji affiché sur la carte (ou un dessin <svg>...</svg>, comme pour l'église)
 //   position    [latitude, longitude]
 //   positionApprox  true si la position n'est pas exacte
 //   adresse     texte
@@ -23,7 +23,7 @@ var POIS = [
   {
     id: 'eglise',
     nom: 'Église Saint-Guihen',
-    icone: '⛪',
+    icone: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="#4a4f57" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="15" width="19" height="7" fill="#ece6da"/><rect x="8" y="9" width="8" height="13" fill="#d8d0bf"/><polygon points="12,3.6 16.6,9 7.4,9" fill="#5f7186"/><path d="M12 0.8V3.6M10.6 2.2H13.4" fill="none"/><path d="M10.5 22v-3.5a1.5 1.5 0 0 1 3 0V22z" fill="#7a4b2a"/><path d="M11 14v-1.6a1 1 0 0 1 2 0V14z" fill="#4a4f57"/></g></svg>',
     position: [48.42944, -2.54056],  // Plus Code CFH5+QQ
     positionApprox: false,
     adresse: null,
