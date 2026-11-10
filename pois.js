@@ -87,7 +87,7 @@ var POIS = [
   },
   {
     id: 'ecole',
-    nom: 'École de Landéhen',
+    nom: 'École Saint-Joseph',
     icone: '🏫',
     position: [48.42894, -2.54231],  // Plus Code CFH5+H3
     positionApprox: false,
@@ -96,6 +96,6 @@ var POIS = [
     horaires: null,
     siteWeb: null,
     telephone: null,
-    note: 'Adresse à vérifier (lue dans un annuaire en ligne). Nom exact, horaires et téléphone à compléter.'
+    note: 'Adresse à vérifier (lue dans un annuaire en ligne). Horaires et téléphone à compléter.'
   }
 ];
