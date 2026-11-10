@@ -3,10 +3,12 @@ var CODE_INSEE = '22098';
 // Centre de la vue : position de l'église, lue dans pois.js
 var EGLISE = POIS.filter(function (p) { return p.id === 'eglise'; })[0].position;
 var ZOOM_FACTOR = 6;               // vue initiale 6 fois plus zoomée que la commune entière
+var MASK_OPACITY = 0.45;           // assombrissement de l'extérieur de la commune (0 = aucun, 1 = noir)
+var MIN_ZOOM_SHARE = 0.25;         // au zoom minimum, la commune occupe environ ce quart de l'image (en surface)
 
 var JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-var map = L.map('map', { zoomSnap: 0.25 }).setView(EGLISE, 15);
+var map = L.map('map', { zoomSnap: 0.25, maxBoundsViscosity: 1.0 }).setView(EGLISE, 15);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -44,21 +46,26 @@ fetch('https://geo.api.gouv.fr/communes/' + CODE_INSEE +
     L.polygon([world].concat(holes), {
       stroke: false,
       fillColor: '#000',
-      fillOpacity: 0.65,
+      fillOpacity: MASK_OPACITY,
       interactive: false
     }).addTo(map);
 
-    // Trait de délimitation de la commune
-    var outline = L.polygon(holes, {
-      color: '#e63946',
-      weight: 3,
-      fill: false,
-      interactive: false
-    }).addTo(map);
+    // Emprise de la commune (aucun tracé affiché : seule la différence de luminosité la délimite)
+    var bounds = L.polygon(holes).getBounds();
 
-    // Zoom qui cadre toute la commune, puis x3 centré sur l'église
-    var zoomCommune = map.getBoundsZoom(outline.getBounds(), false, L.point(40, 40));
-    map.setView(EGLISE, zoomCommune + Math.log2(ZOOM_FACTOR));
+    // Zoom qui cadre toute la commune
+    var zoomCommune = map.getBoundsZoom(bounds, false, L.point(40, 40));
+
+    // Zoom minimum : la commune occupe MIN_ZOOM_SHARE de l'image (1/4 de surface = moitié en largeur et en hauteur)
+    var zoomMin = zoomCommune + Math.log2(Math.sqrt(MIN_ZOOM_SHARE));
+    map.setView(bounds.getCenter(), zoomMin, { animate: false });
+    map.setMinZoom(zoomMin);
+
+    // Déplacements limités à la zone visible au zoom minimum
+    map.setMaxBounds(map.getBounds());
+
+    // Vue de départ : ZOOM_FACTOR fois plus zoomée que la commune entière, centrée sur l'église
+    map.setView(EGLISE, zoomCommune + Math.log2(ZOOM_FACTOR), { animate: false });
   })
   .catch(function (err) {
     console.error(err);
