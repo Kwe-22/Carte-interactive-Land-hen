@@ -21,13 +21,14 @@
 // ---------------------------------------------------------------
 
 // Catégories affichées dans la barre de boutons en haut de la carte (dans cet ordre)
+// La couleur sert au contour du bouton et à celui des marqueurs de la catégorie.
 var CATEGORIES = [
-  { id: 'commerces',     nom: 'Commerces' },
-  { id: 'artisans',      nom: 'Artisans et services professionnels' },
-  { id: 'services',      nom: 'Services' },
-  { id: 'associations',  nom: 'Associations et vie locale' },
-  { id: 'loisirs',       nom: 'Loisirs et sport' },
-  { id: 'patrimoine',    nom: 'Patrimoine' }
+  { id: 'commerces',     nom: 'Commerces',                           couleur: '#F28C28' },  // orange
+  { id: 'artisans',      nom: 'Artisans et services professionnels', couleur: '#3977C3' },  // bleu
+  { id: 'services',      nom: 'Services',                            couleur: '#168C8C' },  // turquoise
+  { id: 'associations',  nom: 'Associations et vie locale',          couleur: '#8B5FBF' },  // violet
+  { id: 'loisirs',       nom: 'Loisirs et sport',                    couleur: '#4E9A51' },  // vert
+  { id: 'patrimoine',    nom: 'Patrimoine',                          couleur: '#C6534B' }   // rouge brique
 ];
 
 var POIS = [

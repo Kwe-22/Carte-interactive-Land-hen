@@ -23,7 +23,7 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
   flex: 0 0 auto; pointer-events: auto; cursor: pointer;
   display: inline-flex; align-items: center; gap: 7px;
   padding: 8px 14px; border-radius: 999px;
-  border: 1px solid rgba(0,0,0,.18); background: #fff; color: #1d1d1f;
+  border: 2px solid var(--cat, rgba(0,0,0,.18)); background: #fff; color: #1d1d1f;
   font: inherit; font-size: 14px; line-height: 1.2; white-space: nowrap;
   box-shadow: 0 1px 5px rgba(0,0,0,.35);
 }
@@ -34,8 +34,10 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
   background: #ececec; color: #444; font-size: 12px; text-align: center;
 }
 .cat-btn.empty { color: #6b6b6b; }
-.cat-btn[aria-pressed="true"] { background: #e63946; border-color: #e63946; color: #fff; }
-.cat-btn[aria-pressed="true"] .count { background: rgba(255,255,255,.25); color: #fff; }
+/* Bouton actif : rempli de la couleur de la catégorie (couleur du texte choisie par app.js selon le contraste) */
+.cat-btn[aria-pressed="true"] { background: var(--cat); color: var(--cat-text, #fff); }
+.cat-btn[aria-pressed="true"] .count { background: rgba(255,255,255,.28); color: inherit; }
+.cat-btn[aria-pressed="true"].dark-text .count { background: rgba(0,0,0,.12); }
 
 #category-empty {
   pointer-events: auto; padding: 8px 12px; border-radius: 8px; background: #fff; font-size: 14px;
@@ -45,8 +47,8 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
 /* Marqueurs des POI */
 .poi-icon span {
   display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 50%;
-  background: #fff; border: 2px solid #e63946;
+  width: 36px; height: 36px; box-sizing: border-box; border-radius: 50%;
+  background: #fff; border: 3px solid var(--cat, #e63946);
   font-size: 19px; box-shadow: 0 1px 5px rgba(0,0,0,.5);
   cursor: pointer;
 }

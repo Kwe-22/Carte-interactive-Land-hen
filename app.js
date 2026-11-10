@@ -195,10 +195,28 @@ document.addEventListener('keydown', function (e) {
 
 var markers = [];   // { poi, marker }
 
+// Couleur de chaque catégorie (définie dans pois.js)
+var COULEURS = {};
+CATEGORIES.forEach(function (c) { COULEURS[c.id] = c.couleur; });
+
+// Texte blanc par défaut ; foncé seulement si le blanc manque de contraste (orange, vert)
+function luminance(hex) {
+  var v = [1, 3, 5].map(function (i) {
+    var c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+}
+function textColorOn(hex) {
+  var contrastWhite = 1.05 / (luminance(hex) + 0.05);
+  return contrastWhite >= 4 ? '#fff' : '#1d1d1f';
+}
+
 POIS.forEach(function (poi) {
+  var couleur = COULEURS[poi.categorie];
   var icon = L.divIcon({
     className: 'poi-icon',
-    html: '<span>' + poi.icone + '</span>',
+    html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
     iconSize: [36, 36],
     iconAnchor: [18, 18]
   });
@@ -240,6 +258,10 @@ CATEGORIES.forEach(function (cat) {
   var button = el('button', 'cat-btn' + (count === 0 ? ' empty' : ''));
   button.type = 'button';
   button.setAttribute('aria-pressed', 'false');
+  button.style.setProperty('--cat', cat.couleur);
+  var texte = textColorOn(cat.couleur);
+  button.style.setProperty('--cat-text', texte);
+  if (texte !== '#fff') button.classList.add('dark-text');
   button.appendChild(el('span', null, cat.nom));
   button.appendChild(el('span', 'count', String(count)));
 
