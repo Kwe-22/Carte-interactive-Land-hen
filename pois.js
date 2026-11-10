@@ -114,5 +114,19 @@ var POIS = [
     siteWeb: null,
     telephone: null,
     note: 'Adresse à vérifier (lue dans un annuaire en ligne). Horaires et téléphone à compléter.'
+  },
+  {
+    id: 'ecurie-cassoire',
+    categorie: 'loisirs',
+    nom: "L'écurie de la Cassoire",
+    icone: '🐴',
+    position: [48.42063, -2.551762],
+    positionApprox: false,
+    adresse: null,
+    photo: null,
+    horaires: null,
+    siteWeb: null,
+    telephone: null,
+    note: "Cours d'équitation. Adresse, horaires, téléphone et site à compléter."
   }
 ];
