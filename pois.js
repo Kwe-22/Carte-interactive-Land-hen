@@ -84,5 +84,18 @@ var POIS = [
     horaires: null,
     telephone: null,
     note: 'Aucune information fiable trouvée : à compléter.'
+  },
+  {
+    id: 'ecole',
+    nom: 'École de Landéhen',
+    icone: '🏫',
+    position: [48.42894, -2.54231],  // Plus Code CFH5+H3
+    positionApprox: false,
+    adresse: '2 rue des Roseaux, 22400 Landéhen',
+    photo: null,
+    horaires: null,
+    siteWeb: null,
+    telephone: null,
+    note: 'Adresse à vérifier (lue dans un annuaire en ligne). Nom exact, horaires et téléphone à compléter.'
   }
 ];
