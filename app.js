@@ -8,7 +8,9 @@ var MIN_ZOOM_SHARE = 0.25;         // au zoom minimum, la commune occupe environ
 
 var JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-var map = L.map('map', { zoomSnap: 0.25, maxBoundsViscosity: 1.0 }).setView(EGLISE, 15);
+var map = L.map('map', { zoomSnap: 0.25, maxBoundsViscosity: 1.0, zoomControl: false }).setView(EGLISE, 15);
+// Boutons +/- en bas à gauche (le haut est occupé par la barre de catégories)
+L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -166,7 +168,10 @@ function renderPoi(poi) {
   panelContent.appendChild(body);
 }
 
+var currentPoi = null;   // lieu actuellement affiché dans le panneau
+
 function openPanel(poi) {
+  currentPoi = poi;
   renderPoi(poi);
   panel.classList.add('open');
   panel.setAttribute('aria-hidden', 'false');
@@ -176,6 +181,7 @@ function openPanel(poi) {
 }
 
 function closePanel() {
+  currentPoi = null;
   panel.classList.remove('open');
   panel.setAttribute('aria-hidden', 'true');
 }
@@ -187,6 +193,8 @@ document.addEventListener('keydown', function (e) {
 
 // ---------- Marqueurs des POI ----------
 
+var markers = [];   // { poi, marker }
+
 POIS.forEach(function (poi) {
   var icon = L.divIcon({
     className: 'poi-icon',
@@ -194,7 +202,53 @@ POIS.forEach(function (poi) {
     iconSize: [36, 36],
     iconAnchor: [18, 18]
   });
-  L.marker(poi.position, { icon: icon, title: poi.nom })
+  var marker = L.marker(poi.position, { icon: icon, title: poi.nom })
     .addTo(map)
     .on('click', function () { openPanel(poi); });
+  markers.push({ poi: poi, marker: marker });
+});
+
+// ---------- Barre de catégories ----------
+
+var activeCategory = null;   // null = tous les lieux affichés
+var categoriesBar = document.getElementById('categories');
+var emptyMessage = document.getElementById('category-empty');
+var categoryButtons = [];    // { id, button }
+
+function applyCategoryFilter() {
+  var visibleCount = 0;
+  markers.forEach(function (m) {
+    var visible = !activeCategory || m.poi.categorie === activeCategory;
+    if (visible) visibleCount++;
+    if (visible && !map.hasLayer(m.marker)) m.marker.addTo(map);
+    if (!visible && map.hasLayer(m.marker)) map.removeLayer(m.marker);
+  });
+
+  categoryButtons.forEach(function (cb) {
+    cb.button.setAttribute('aria-pressed', cb.id === activeCategory ? 'true' : 'false');
+  });
+
+  emptyMessage.style.display = (activeCategory && visibleCount === 0) ? 'block' : 'none';
+
+  // Referme la fiche si son lieu n'est plus affiché
+  if (currentPoi && activeCategory && currentPoi.categorie !== activeCategory) closePanel();
+}
+
+CATEGORIES.forEach(function (cat) {
+  var count = POIS.filter(function (p) { return p.categorie === cat.id; }).length;
+
+  var button = el('button', 'cat-btn' + (count === 0 ? ' empty' : ''));
+  button.type = 'button';
+  button.setAttribute('aria-pressed', 'false');
+  button.appendChild(el('span', null, cat.nom));
+  button.appendChild(el('span', 'count', String(count)));
+
+  // Un clic sélectionne la catégorie ; un second clic dessus affiche de nouveau tous les lieux
+  button.addEventListener('click', function () {
+    activeCategory = (activeCategory === cat.id) ? null : cat.id;
+    applyCategoryFilter();
+  });
+
+  categoriesBar.appendChild(button);
+  categoryButtons.push({ id: cat.id, button: button });
 });
