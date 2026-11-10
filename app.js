@@ -47,7 +47,10 @@ fetch('https://geo.api.gouv.fr/communes/' + CODE_INSEE +
       stroke: false,
       fillColor: '#000',
       fillOpacity: MASK_OPACITY,
-      interactive: false
+      interactive: false,
+      // Leaflet ne dessine une forme que sur la zone visible + une marge, puis la redessine
+      // à la fin du déplacement. Une grande marge évite de voir la carte non grisée pendant qu'on tire.
+      renderer: L.svg({ padding: 2 })
     }).addTo(map);
 
     // Emprise de la commune (aucun tracé affiché : seule la différence de luminosité la délimite)
