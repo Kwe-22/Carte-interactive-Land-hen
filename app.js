@@ -1,14 +1,14 @@
 // Landéhen – code INSEE 22098
+// Réglages des catégories : categories.js — Lecture du fichier des lieux : donnees.js
 var CODE_INSEE = '22098';
-// Centre de la vue : position de l'église, lue dans pois.js
-var EGLISE = POIS.filter(function (p) { return p.id === 'eglise'; })[0].position;
+var FICHIER_LIEUX = 'donnees/pois.csv';   // fichier à modifier avec Excel (voir donnees/pois.xlsx)
 var ZOOM_FACTOR = 6;               // vue initiale 6 fois plus zoomée que la commune entière
 var MASK_OPACITY = 0.45;           // assombrissement de l'extérieur de la commune (0 = aucun, 1 = noir)
 var MIN_ZOOM_SHARE = 0.25;         // au zoom minimum, la commune occupe environ ce quart de l'image (en surface)
 
 var JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-var map = L.map('map', { zoomSnap: 0.25, maxBoundsViscosity: 1.0, zoomControl: false }).setView(EGLISE, 15);
+var map = L.map('map', { zoomSnap: 0.25, maxBoundsViscosity: 1.0, zoomControl: false }).setView(CENTRE_DEPART, 15);
 // Boutons +/- en bas à gauche (le haut est occupé par la barre de catégories)
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
@@ -70,7 +70,7 @@ fetch('https://geo.api.gouv.fr/communes/' + CODE_INSEE +
     map.setMaxBounds(map.getBounds());
 
     // Vue de départ : ZOOM_FACTOR fois plus zoomée que la commune entière, centrée sur l'église
-    map.setView(EGLISE, zoomCommune + Math.log2(ZOOM_FACTOR), { animate: false });
+    map.setView(CENTRE_DEPART, zoomCommune + Math.log2(ZOOM_FACTOR), { animate: false });
   })
   .catch(function (err) {
     console.error(err);
@@ -191,15 +191,12 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closePanel();
 });
 
-// ---------- Marqueurs des POI ----------
+// ---------- Couleurs des catégories ----------
 
-var markers = [];   // { poi, marker }
-
-// Couleur de chaque catégorie (définie dans pois.js)
 var COULEURS = {};
 CATEGORIES.forEach(function (c) { COULEURS[c.id] = c.couleur; });
 
-// Texte blanc par défaut ; foncé seulement si le blanc manque de contraste (orange, vert)
+// Texte blanc par défaut ; foncé seulement si le blanc manque de contraste (orange, jaune)
 function luminance(hex) {
   var v = [1, 3, 5].map(function (i) {
     var c = parseInt(hex.slice(i, i + 2), 16) / 255;
@@ -212,22 +209,9 @@ function textColorOn(hex) {
   return contrastWhite >= 4 ? '#fff' : '#1d1d1f';
 }
 
-POIS.forEach(function (poi) {
-  var couleur = COULEURS[poi.categorie];
-  var icon = L.divIcon({
-    className: 'poi-icon',
-    html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
-  });
-  var marker = L.marker(poi.position, { icon: icon, title: poi.nom })
-    .addTo(map)
-    .on('click', function () { openPanel(poi); });
-  markers.push({ poi: poi, marker: marker });
-});
+// ---------- Lieux : marqueurs et barre de catégories ----------
 
-// ---------- Barre de catégories ----------
-
+var markers = [];            // { poi, marker }
 var activeCategory = null;   // null = tous les lieux affichés
 var categoriesBar = document.getElementById('categories');
 var emptyMessage = document.getElementById('category-empty');
@@ -252,25 +236,113 @@ function applyCategoryFilter() {
   if (currentPoi && activeCategory && currentPoi.categorie !== activeCategory) closePanel();
 }
 
-CATEGORIES.forEach(function (cat) {
-  var count = POIS.filter(function (p) { return p.categorie === cat.id; }).length;
+// Affiche les lieux sur la carte (peut être rappelée : elle remplace ce qui était affiché)
+function afficherLieux(pois) {
+  closePanel();
+  markers.forEach(function (m) { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); });
+  markers = [];
+  activeCategory = null;
+  categoriesBar.textContent = '';
+  categoryButtons = [];
 
-  var button = el('button', 'cat-btn' + (count === 0 ? ' empty' : ''));
-  button.type = 'button';
-  button.setAttribute('aria-pressed', 'false');
-  button.style.setProperty('--cat', cat.couleur);
-  var texte = textColorOn(cat.couleur);
-  button.style.setProperty('--cat-text', texte);
-  if (texte !== '#fff') button.classList.add('dark-text');
-  button.appendChild(el('span', null, cat.nom));
-  button.appendChild(el('span', 'count', String(count)));
-
-  // Un clic sélectionne la catégorie ; un second clic dessus affiche de nouveau tous les lieux
-  button.addEventListener('click', function () {
-    activeCategory = (activeCategory === cat.id) ? null : cat.id;
-    applyCategoryFilter();
+  pois.forEach(function (poi) {
+    var couleur = COULEURS[poi.categorie];
+    var icon = L.divIcon({
+      className: 'poi-icon',
+      html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+    var marker = L.marker(poi.position, { icon: icon, title: poi.nom })
+      .addTo(map)
+      .on('click', function () { openPanel(poi); });
+    markers.push({ poi: poi, marker: marker });
   });
 
-  categoriesBar.appendChild(button);
-  categoryButtons.push({ id: cat.id, button: button });
-});
+  CATEGORIES.forEach(function (cat) {
+    var count = pois.filter(function (p) { return p.categorie === cat.id; }).length;
+
+    var button = el('button', 'cat-btn' + (count === 0 ? ' empty' : ''));
+    button.type = 'button';
+    button.setAttribute('aria-pressed', 'false');
+    button.style.setProperty('--cat', cat.couleur);
+    var texte = textColorOn(cat.couleur);
+    button.style.setProperty('--cat-text', texte);
+    if (texte !== '#fff') button.classList.add('dark-text');
+    button.appendChild(el('span', null, cat.nom));
+    button.appendChild(el('span', 'count', String(count)));
+
+    // Un clic sélectionne la catégorie ; un second clic dessus affiche de nouveau tous les lieux
+    button.addEventListener('click', function () {
+      activeCategory = (activeCategory === cat.id) ? null : cat.id;
+      applyCategoryFilter();
+    });
+
+    categoriesBar.appendChild(button);
+    categoryButtons.push({ id: cat.id, button: button });
+  });
+  applyCategoryFilter();
+}
+
+// ---------- Chargement du fichier des lieux ----------
+
+var dataMessage = document.getElementById('data-message');
+
+function masquerMessageDonnees() {
+  dataMessage.style.display = 'none';
+  dataMessage.textContent = '';
+}
+
+// Affiche la liste des lignes à corriger dans le fichier (si besoin)
+function afficherProblemes(problemes) {
+  masquerMessageDonnees();
+  if (!problemes.length) return;
+  dataMessage.appendChild(el('strong', null,
+    problemes.length === 1 ? 'À corriger dans le fichier des lieux :' : problemes.length + ' points à corriger dans le fichier des lieux :'));
+  var liste = el('ul');
+  problemes.slice(0, 8).forEach(function (p) { liste.appendChild(el('li', null, p)); });
+  if (problemes.length > 8) liste.appendChild(el('li', null, '… et ' + (problemes.length - 8) + ' autre(s).'));
+  dataMessage.appendChild(liste);
+  var fermer = el('button', 'toast-close', 'Fermer');
+  fermer.type = 'button';
+  fermer.addEventListener('click', masquerMessageDonnees);
+  dataMessage.appendChild(fermer);
+  dataMessage.style.display = 'block';
+}
+
+function chargerLieux(texte) {
+  var resultat = lireLieux(texte, { categories: CATEGORIES, icones: ICONES, reference: CENTRE_COMMUNE });
+  afficherLieux(resultat.pois);
+  afficherProblemes(resultat.problemes);
+}
+
+// Repli : si le fichier ne peut pas être lu automatiquement (page ouverte directement depuis
+// l'ordinateur, par exemple), on propose de le choisir à la main.
+function proposerChoixDuFichier() {
+  masquerMessageDonnees();
+  dataMessage.appendChild(el('p', null,
+    'Le fichier des lieux (' + FICHIER_LIEUX + ') ne peut pas être lu automatiquement ici. Choisissez-le manuellement :'));
+  var champ = el('input');
+  champ.type = 'file';
+  champ.accept = '.csv,.txt,text/csv';
+  champ.addEventListener('change', function () {
+    var fichier = champ.files && champ.files[0];
+    if (!fichier) return;
+    var lecteur = new FileReader();
+    lecteur.onload = function () { chargerLieux(decoderTexte(lecteur.result)); };
+    lecteur.readAsArrayBuffer(fichier);
+  });
+  dataMessage.appendChild(champ);
+  dataMessage.style.display = 'block';
+}
+
+fetch(FICHIER_LIEUX, { cache: 'no-store' })
+  .then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.arrayBuffer();
+  })
+  .then(function (buffer) { chargerLieux(decoderTexte(buffer)); })
+  .catch(function (err) {
+    console.error(err);
+    proposerChoixDuFichier();
+  });

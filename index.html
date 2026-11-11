@@ -9,7 +9,10 @@
 </head>
 <body>
   <div id="map"></div>
-  <div id="message"></div>
+  <div id="messages">
+    <div id="message" class="toast"></div>
+    <div id="data-message" class="toast" role="status"></div>
+  </div>
 
   <div id="top-ui">
     <nav id="categories" aria-label="Catégories de lieux"></nav>
@@ -22,7 +25,8 @@
   </aside>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="pois.js"></script>
+  <script src="categories.js"></script>
+  <script src="donnees.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
