@@ -97,8 +97,16 @@ function todo() {
   return el('p', 'todo', 'À compléter');
 }
 
-function renderPoi(poi) {
+// groupe : si la fiche est ouverte depuis une liste de lieux au même endroit, on propose un bouton de retour
+function renderPoi(poi, groupe) {
   panelContent.textContent = '';
+
+  if (groupe) {
+    var retour = el('button', 'back-btn', '← Retour aux ' + groupe.pois.length + ' lieux de cet endroit');
+    retour.type = 'button';
+    retour.addEventListener('click', function () { openGroupPanel(groupe); });
+    panelContent.appendChild(retour);
+  }
 
   // Photo
   if (poi.photo) {
@@ -168,20 +176,65 @@ function renderPoi(poi) {
   panelContent.appendChild(body);
 }
 
-var currentPoi = null;   // lieu actuellement affiché dans le panneau
+var currentPoi = null;     // lieu actuellement affiché dans le panneau
+var currentGroup = null;   // groupe de lieux (même endroit) dont la liste est affichée dans le panneau
 
-function openPanel(poi) {
-  currentPoi = poi;
-  renderPoi(poi);
+function montrerPanneau(position) {
   panel.classList.add('open');
   panel.setAttribute('aria-hidden', 'false');
   panel.scrollTop = 0;
   // Évite que le marqueur reste caché sous le panneau
-  map.panInside(poi.position, { paddingBottomRight: [panel.offsetWidth + 24, 24] });
+  map.panInside(position, { paddingBottomRight: [panel.offsetWidth + 24, 24] });
+}
+
+function openPanel(poi, groupe) {
+  currentPoi = poi;
+  currentGroup = null;
+  renderPoi(poi, groupe);
+  montrerPanneau(poi.position);
+}
+
+// Liste des lieux situés au même endroit (un clic sur un lieu ouvre sa fiche)
+function openGroupPanel(groupe) {
+  currentPoi = null;
+  currentGroup = groupe;
+  panelContent.textContent = '';
+
+  var body = el('div', 'panel-body');
+  body.appendChild(el('h2', null, groupe.pois.length + ' lieux à cet endroit'));
+
+  var liste = el('ul', 'group-list');
+  groupe.pois.forEach(function (poi) {
+    var li = el('li');
+    var bouton = el('button', 'group-item');
+    bouton.type = 'button';
+
+    var pastille = el('span', 'group-dot');
+    pastille.style.background = COULEURS[poi.categorie] || '#888';
+    bouton.appendChild(pastille);
+
+    var icone = el('span', 'group-icon');
+    icone.innerHTML = poi.icone;   // emoji (échappé) ou dessin défini dans categories.js
+    bouton.appendChild(icone);
+
+    var textes = el('span', 'group-text');
+    textes.appendChild(el('span', 'group-name', poi.nom));
+    textes.appendChild(el('span', 'group-cat', NOMS_CATEGORIES[poi.categorie] || ''));
+    bouton.appendChild(textes);
+
+    bouton.addEventListener('click', function () { openPanel(poi, groupe); });
+    li.appendChild(bouton);
+    liste.appendChild(li);
+  });
+  body.appendChild(liste);
+  panelContent.appendChild(body);
+
+  montrerPanneau(groupe.position);
 }
 
 function closePanel() {
   currentPoi = null;
+  currentGroup = null;
   panel.classList.remove('open');
   panel.setAttribute('aria-hidden', 'true');
 }
@@ -193,8 +246,8 @@ document.addEventListener('keydown', function (e) {
 
 // ---------- Couleurs des catégories ----------
 
-var COULEURS = {};
-CATEGORIES.forEach(function (c) { COULEURS[c.id] = c.couleur; });
+var COULEURS = {}, NOMS_CATEGORIES = {};
+CATEGORIES.forEach(function (c) { COULEURS[c.id] = c.couleur; NOMS_CATEGORIES[c.id] = c.nom; });
 
 // Texte blanc par défaut ; foncé seulement si le blanc manque de contraste (orange, jaune)
 function luminance(hex) {
@@ -209,55 +262,98 @@ function textColorOn(hex) {
   return contrastWhite >= 4 ? '#fff' : '#1d1d1f';
 }
 
-// ---------- Lieux : marqueurs et barre de catégories ----------
+// ---------- Lieux : marqueurs, regroupement et barre de catégories ----------
 
-var markers = [];            // { poi, marker }
-var activeCategory = null;   // null = tous les lieux affichés
+var SEUIL_REGROUPEMENT = 40;   // deux marqueurs plus proches que ça (en pixels) sont regroupés en un seul
+var tousLesLieux = [];         // tous les lieux lus dans le fichier
+var markers = [];              // marqueurs actuellement posés sur la carte
+var activeCategory = null;     // null = tous les lieux affichés
 var categoriesBar = document.getElementById('categories');
 var emptyMessage = document.getElementById('category-empty');
-var categoryButtons = [];    // { id, button }
+var categoryButtons = [];      // { id, button }
+
+function lieuxVisibles() {
+  return tousLesLieux.filter(function (p) { return !activeCategory || p.categorie === activeCategory; });
+}
+
+function iconeLieu(poi) {
+  var couleur = COULEURS[poi.categorie];
+  return L.divIcon({
+    className: 'poi-icon',
+    html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+}
+
+// Marqueur d'un groupe de lieux : un cercle avec leur nombre, à la couleur de la catégorie si elle est commune
+function iconeGroupe(groupe) {
+  var couleur = groupe.categorie ? COULEURS[groupe.categorie] : null;
+  return L.divIcon({
+    className: 'poi-icon poi-cluster',
+    html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : ' class="mixte"') + '>' + groupe.pois.length + '</span>',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  });
+}
+
+// Clic sur un groupe : on zoome pour séparer les lieux ; s'ils sont au même endroit
+// (ou si on ne peut plus zoomer), on affiche la liste dans le panneau
+function cliquerGroupe(groupe) {
+  if (groupe.memePosition || map.getZoom() >= map.getMaxZoom() - 0.5) {
+    openGroupPanel(groupe);
+    return;
+  }
+  var positions = groupe.pois.map(function (p) { return p.position; });
+  map.fitBounds(L.latLngBounds(positions), { padding: [70, 70], maxZoom: map.getMaxZoom() });
+}
+
+// Repose tous les marqueurs : appelée à chaque changement de filtre et de zoom
+function redessinerMarqueurs() {
+  markers.forEach(function (m) { map.removeLayer(m); });
+  markers = [];
+
+  var groupes = regrouperLieux(lieuxVisibles(), function (position) {
+    return map.project(L.latLng(position), map.getZoom());
+  }, SEUIL_REGROUPEMENT);
+
+  groupes.forEach(function (groupe) {
+    var marker;
+    if (groupe.pois.length === 1) {
+      var poi = groupe.pois[0];
+      marker = L.marker(poi.position, { icon: iconeLieu(poi), title: poi.nom })
+        .on('click', function () { openPanel(poi); });
+    } else {
+      marker = L.marker(groupe.position, { icon: iconeGroupe(groupe), title: groupe.pois.length + ' lieux' })
+        .on('click', function () { cliquerGroupe(groupe); });
+    }
+    marker.addTo(map);
+    markers.push(marker);
+  });
+}
+
+map.on('zoomend', redessinerMarqueurs);
 
 function applyCategoryFilter() {
-  var visibleCount = 0;
-  markers.forEach(function (m) {
-    var visible = !activeCategory || m.poi.categorie === activeCategory;
-    if (visible) visibleCount++;
-    if (visible && !map.hasLayer(m.marker)) m.marker.addTo(map);
-    if (!visible && map.hasLayer(m.marker)) map.removeLayer(m.marker);
-  });
+  redessinerMarqueurs();
 
   categoryButtons.forEach(function (cb) {
     cb.button.setAttribute('aria-pressed', cb.id === activeCategory ? 'true' : 'false');
   });
 
-  emptyMessage.style.display = (activeCategory && visibleCount === 0) ? 'block' : 'none';
+  emptyMessage.style.display = (activeCategory && lieuxVisibles().length === 0) ? 'block' : 'none';
 
-  // Referme la fiche si son lieu n'est plus affiché
-  if (currentPoi && activeCategory && currentPoi.categorie !== activeCategory) closePanel();
+  // Referme le panneau s'il montre un lieu qui n'est plus affiché, ou une liste devenue périmée
+  if (currentGroup || (currentPoi && activeCategory && currentPoi.categorie !== activeCategory)) closePanel();
 }
 
 // Affiche les lieux sur la carte (peut être rappelée : elle remplace ce qui était affiché)
 function afficherLieux(pois) {
   closePanel();
-  markers.forEach(function (m) { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); });
-  markers = [];
+  tousLesLieux = pois;
   activeCategory = null;
   categoriesBar.textContent = '';
   categoryButtons = [];
-
-  pois.forEach(function (poi) {
-    var couleur = COULEURS[poi.categorie];
-    var icon = L.divIcon({
-      className: 'poi-icon',
-      html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
-    });
-    var marker = L.marker(poi.position, { icon: icon, title: poi.nom })
-      .addTo(map)
-      .on('click', function () { openPanel(poi); });
-    markers.push({ poi: poi, marker: marker });
-  });
 
   CATEGORIES.forEach(function (cat) {
     var count = pois.filter(function (p) { return p.categorie === cat.id; }).length;
@@ -314,6 +410,9 @@ function chargerLieux(texte) {
   var resultat = lireLieux(texte, { categories: CATEGORIES, icones: ICONES, reference: CENTRE_COMMUNE });
   afficherLieux(resultat.pois);
   afficherProblemes(resultat.problemes);
+  if (resultat.sansPosition.length) {
+    console.info(resultat.sansPosition.length + ' lieu(x) pas encore placé(s) sur la carte (position vide) : ' + resultat.sansPosition.join(', '));
+  }
 }
 
 // Repli : si le fichier ne peut pas être lu automatiquement (page ouverte directement depuis

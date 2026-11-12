@@ -189,13 +189,14 @@ function trouverColonne(index, noms) {
 
 // texte : contenu du CSV
 // options : { categories, icones, reference }
-// Renvoie { pois: [...], problemes: ['Ligne 5 ignorée : ...', ...] }
+// Renvoie { pois: [...], problemes: ['Ligne 5 ignorée : ...', ...], sansPosition: ['Nom', ...] }
+// Une ligne dont la position est vide n'est pas une erreur : le lieu n'est simplement pas encore placé.
 function lireLieux(texte, options) {
   var categories = options.categories, icones = options.icones || {}, ref = options.reference;
-  var pois = [], problemes = [];
+  var pois = [], problemes = [], sansPosition = [];
 
   var lignes = lireCSV(texte);
-  if (!lignes.length) return { pois: [], problemes: ['Le fichier est vide.'] };
+  if (!lignes.length) return { pois: [], problemes: ['Le fichier est vide.'], sansPosition: [] };
 
   // Colonnes (reconnues par leur titre, dans n'importe quel ordre)
   var index = {};
@@ -212,7 +213,7 @@ function lireLieux(texte, options) {
   if (colCategorie === undefined) manquantes.push('Catégorie');
   if (colPosition === undefined) manquantes.push('Position');
   if (manquantes.length) {
-    return { pois: [], problemes: ['Colonne introuvable : ' + manquantes.join(', ') + '. Vérifiez les titres de la première ligne.'] };
+    return { pois: [], problemes: ['Colonne introuvable : ' + manquantes.join(', ') + '. Vérifiez les titres de la première ligne.'], sansPosition: [] };
   }
 
   var colAdresse = trouverColonne(index, ['adresse']);
@@ -237,6 +238,9 @@ function lireLieux(texte, options) {
     var debut = 'Ligne ' + (r + 1);
     if (!nom) { problemes.push(debut + ' ignorée : le nom est vide.'); continue; }
     debut += ' (' + nom + ')';
+
+    // Position vide : lieu pas encore placé sur la carte, ce n'est pas une erreur
+    if (cellule(ligne, colPosition) === '') { sansPosition.push(nom); continue; }
 
     var texteCategorie = cellule(ligne, colCategorie);
     var categorie = trouverCategorie(texteCategorie, categories);
@@ -303,5 +307,50 @@ function lireLieux(texte, options) {
     });
   }
 
-  return { pois: pois, problemes: problemes };
+  return { pois: pois, problemes: problemes, sansPosition: sansPosition };
+}
+
+// ---------- Lieux qui se superposent ----------
+
+// Regroupe les lieux dont les marqueurs se chevaucheraient à l'écran.
+//   pois     : lieux à afficher
+//   projeter : fonction [lat, lng] -> { x, y } en pixels, pour le niveau de zoom actuel
+//   seuil    : distance en pixels en dessous de laquelle deux lieux sont regroupés
+// Renvoie une liste de groupes { pois, position, memePosition, categorie, x, y } :
+//   position      moyenne des positions du groupe (là où se place le marqueur)
+//   memePosition  true si tous les lieux sont au même endroit (zoomer ne les séparera jamais)
+//   categorie     identifiant de la catégorie si tous les lieux en ont la même, sinon null
+function regrouperLieux(pois, projeter, seuil) {
+  var groupes = [];
+
+  pois.forEach(function (poi) {
+    var pt = projeter(poi.position);
+    var groupe = null;
+    for (var i = 0; i < groupes.length; i++) {
+      var dx = groupes[i].x - pt.x, dy = groupes[i].y - pt.y;
+      if (Math.sqrt(dx * dx + dy * dy) < seuil) { groupe = groupes[i]; break; }
+    }
+    if (!groupe) {
+      groupe = { x: pt.x, y: pt.y, pois: [] };
+      groupes.push(groupe);
+    }
+    groupe.pois.push(poi);
+  });
+
+  groupes.forEach(function (g) {
+    var n = g.pois.length;
+    g.position = [
+      g.pois.reduce(function (s, p) { return s + p.position[0]; }, 0) / n,
+      g.pois.reduce(function (s, p) { return s + p.position[1]; }, 0) / n
+    ];
+    var premier = g.pois[0].position;
+    // 5e-5 degré ≈ 5 mètres
+    g.memePosition = g.pois.every(function (p) {
+      return Math.abs(p.position[0] - premier[0]) < 5e-5 && Math.abs(p.position[1] - premier[1]) < 5e-5;
+    });
+    var cat = g.pois[0].categorie;
+    g.categorie = g.pois.every(function (p) { return p.categorie === cat; }) ? cat : null;
+  });
+
+  return groupes;
 }
