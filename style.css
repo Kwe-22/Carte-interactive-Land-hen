@@ -150,3 +150,10 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
 .group-text { display: flex; flex-direction: column; min-width: 0; }
 .group-name { font-size: 15px; }
 .group-cat { font-size: 12px; color: #666; }
+
+/* Lieux déployés autour d'un groupe (au survol) : petite apparition */
+.poi-icon.eventail span { animation: eventail-apparition .16s ease-out; }
+@keyframes eventail-apparition {
+  from { transform: scale(.3); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}

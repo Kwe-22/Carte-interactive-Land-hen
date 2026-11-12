@@ -354,3 +354,52 @@ function regrouperLieux(pois, projeter, seuil) {
 
   return groupes;
 }
+
+// ---------- Déploiement d'un groupe « en éventail » ----------
+// Au survol d'un groupe, ses lieux se placent autour du marqueur :
+// en arc de cercle quand ils sont peu nombreux, en cercle complet sinon.
+
+var EVENTAIL_MAX = 16;           // au-delà, pas de déploiement (la liste du panneau reste disponible)
+var EVENTAIL_SEUIL_ARC = 5;      // jusqu'à ce nombre de lieux : arc de cercle ; au-delà : cercle complet
+var EVENTAIL_PAS_ARC = 45;       // degrés entre deux lieux voisins dans un arc
+var EVENTAIL_ESPACEMENT = 42;    // distance minimale (pixels) entre deux lieux voisins
+var EVENTAIL_RAYON_MIN = 56;     // rayon minimal (pixels)
+var EVENTAIL_DEMI_TAILLE = 18;   // demi-taille d'un marqueur de lieu (pixels)
+
+// Rayon (pixels) de l'éventail pour n lieux
+function rayonEventail(n) {
+  if (n <= EVENTAIL_SEUIL_ARC) return EVENTAIL_RAYON_MIN;
+  return Math.max(EVENTAIL_RAYON_MIN, Math.ceil((EVENTAIL_ESPACEMENT / 2) / Math.sin(Math.PI / n)));
+}
+
+// Décalages { dx, dy } (pixels, depuis le centre du groupe) des n lieux.
+// orientation : direction du milieu de l'arc en degrés (-90 = vers le haut, 0 = vers la droite) ;
+// elle ne sert que pour un arc, un cercle complet commence toujours en haut.
+function positionsEventail(n, orientation) {
+  var r = rayonEventail(n), decalages = [];
+  for (var i = 0; i < n; i++) {
+    var angle = (n <= EVENTAIL_SEUIL_ARC)
+      ? orientation + (i - (n - 1) / 2) * EVENTAIL_PAS_ARC
+      : -90 + i * 360 / n;
+    var rad = angle * Math.PI / 180;
+    decalages.push({ dx: Math.round(r * Math.cos(rad)), dy: Math.round(r * Math.sin(rad)) });
+  }
+  return decalages;
+}
+
+// Choisit l'orientation d'un arc pour qu'il sorte le moins possible de la zone visible
+// (préférence : vers le haut). centre : { x, y } en pixels écran ; zone : { x0, y0, x1, y1 }.
+function choisirOrientation(n, centre, zone) {
+  if (n > EVENTAIL_SEUIL_ARC) return -90;
+  // Ordre de préférence : haut, bas, droite, gauche, puis les diagonales
+  var candidates = [-90, 90, 0, 180, -45, -135, 45, 135];
+  var meilleure = candidates[0], moins = Infinity;
+  candidates.forEach(function (orientation) {
+    var dehors = positionsEventail(n, orientation).filter(function (d) {
+      var x = centre.x + d.dx, y = centre.y + d.dy, m = EVENTAIL_DEMI_TAILLE;
+      return x - m < zone.x0 || x + m > zone.x1 || y - m < zone.y0 || y + m > zone.y1;
+    }).length;
+    if (dehors < moins) { moins = dehors; meilleure = orientation; }
+  });
+  return meilleure;
+}

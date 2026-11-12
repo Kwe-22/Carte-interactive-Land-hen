@@ -276,10 +276,10 @@ function lieuxVisibles() {
   return tousLesLieux.filter(function (p) { return !activeCategory || p.categorie === activeCategory; });
 }
 
-function iconeLieu(poi) {
+function iconeLieu(poi, classe) {
   var couleur = COULEURS[poi.categorie];
   return L.divIcon({
-    className: 'poi-icon',
+    className: 'poi-icon' + (classe ? ' ' + classe : ''),
     html: '<span' + (couleur ? ' style="--cat:' + couleur + '"' : '') + '>' + poi.icone + '</span>',
     iconSize: [36, 36],
     iconAnchor: [18, 18]
@@ -300,6 +300,7 @@ function iconeGroupe(groupe) {
 // Clic sur un groupe : on zoome pour séparer les lieux ; s'ils sont au même endroit
 // (ou si on ne peut plus zoomer), on affiche la liste dans le panneau
 function cliquerGroupe(groupe) {
+  fermerEventail();
   if (groupe.memePosition || map.getZoom() >= map.getMaxZoom() - 0.5) {
     openGroupPanel(groupe);
     return;
@@ -308,8 +309,78 @@ function cliquerGroupe(groupe) {
   map.fitBounds(L.latLngBounds(positions), { padding: [70, 70], maxZoom: map.getMaxZoom() });
 }
 
+// ---------- Survol d'un groupe : les lieux se déploient autour du marqueur ----------
+
+var DELAI_FERMETURE = 350;   // ms : laisse le temps d'aller du centre vers un lieu sans que tout se referme
+var eventail = null;         // { groupe, elements: [couches Leaflet], minuteur }
+
+function annulerFermeture() {
+  if (eventail && eventail.minuteur) { clearTimeout(eventail.minuteur); eventail.minuteur = null; }
+}
+
+function planifierFermeture() {
+  if (!eventail) return;
+  annulerFermeture();
+  eventail.minuteur = setTimeout(fermerEventail, DELAI_FERMETURE);
+}
+
+function fermerEventail() {
+  if (!eventail) return;
+  annulerFermeture();
+  eventail.elements.forEach(function (couche) { map.removeLayer(couche); });
+  eventail = null;
+}
+
+function ouvrirEventail(groupe) {
+  if (eventail && eventail.groupe === groupe) { annulerFermeture(); return; }
+  fermerEventail();
+
+  var n = groupe.pois.length;
+  if (n > EVENTAIL_MAX) return;   // trop de lieux : la liste du panneau reste disponible au clic
+
+  // Zone où l'éventail doit tenir : sous la barre de catégories, hors du panneau s'il est ouvert
+  var taille = map.getSize();
+  var zone = {
+    x0: 20, y0: 70,
+    x1: taille.x - 20 - (panel.classList.contains('open') ? panel.offsetWidth : 0),
+    y1: taille.y - 20
+  };
+  var centreEcran = map.latLngToContainerPoint(L.latLng(groupe.position));
+  var orientation = choisirOrientation(n, centreEcran, zone);
+  var decalages = positionsEventail(n, orientation);
+
+  var centre = map.latLngToLayerPoint(L.latLng(groupe.position));
+  var elements = [];
+  var nouveau = { groupe: groupe, elements: elements, minuteur: null };
+  eventail = nouveau;
+
+  decalages.forEach(function (decalage, i) {
+    var poi = groupe.pois[i];
+    var position = map.layerPointToLatLng(centre.add(L.point(decalage.dx, decalage.dy)));
+
+    // Trait entre le centre du groupe et le lieu
+    var trait = L.polyline([L.latLng(groupe.position), position], {
+      color: '#3a3f47', weight: 2, opacity: 0.7, interactive: false
+    }).addTo(map);
+    elements.push(trait);
+
+    var satellite = L.marker(position, { icon: iconeLieu(poi, 'eventail'), zIndexOffset: 1000, keyboard: false })
+      .bindTooltip(poi.nom, { direction: 'top', offset: [0, -18] })
+      .on('mouseover', annulerFermeture)
+      .on('mouseout', planifierFermeture)
+      .on('click', function () { fermerEventail(); openPanel(poi, groupe); })
+      .addTo(map);
+    elements.push(satellite);
+  });
+}
+
+// Le déploiement n'a plus de sens dès que la carte bouge
+map.on('dragstart', fermerEventail);
+map.on('zoomstart', fermerEventail);
+
 // Repose tous les marqueurs : appelée à chaque changement de filtre et de zoom
 function redessinerMarqueurs() {
+  fermerEventail();
   markers.forEach(function (m) { map.removeLayer(m); });
   markers = [];
 
@@ -325,7 +396,9 @@ function redessinerMarqueurs() {
         .on('click', function () { openPanel(poi); });
     } else {
       marker = L.marker(groupe.position, { icon: iconeGroupe(groupe), title: groupe.pois.length + ' lieux' })
-        .on('click', function () { cliquerGroupe(groupe); });
+        .on('click', function () { cliquerGroupe(groupe); })
+        .on('mouseover', function () { ouvrirEventail(groupe); })
+        .on('mouseout', planifierFermeture);
     }
     marker.addTo(map);
     markers.push(marker);
