@@ -276,6 +276,19 @@ function lieuxVisibles() {
   return tousLesLieux.filter(function (p) { return !activeCategory || p.categorie === activeCategory; });
 }
 
+// Info-bulle commune à tous les lieux, isolés ou déployés depuis un groupe : même aspect, même position
+var INFOBULLE = { direction: 'top', offset: [0, -18] };
+
+// Nom lu par les lecteurs d'écran. On n'utilise pas l'attribut title : il ferait apparaître
+// en plus l'info-bulle du navigateur, différente de celle de la carte.
+function nommerMarqueur(marker, texte) {
+  var element = marker.getElement && marker.getElement();
+  if (element) {
+    element.setAttribute('aria-label', texte);
+    element.setAttribute('role', 'button');
+  }
+}
+
 function iconeLieu(poi, classe) {
   var couleur = COULEURS[poi.categorie];
   return L.divIcon({
@@ -365,11 +378,12 @@ function ouvrirEventail(groupe) {
     elements.push(trait);
 
     var satellite = L.marker(position, { icon: iconeLieu(poi, 'eventail'), zIndexOffset: 1000, keyboard: false })
-      .bindTooltip(poi.nom, { direction: 'top', offset: [0, -18] })
+      .bindTooltip(poi.nom, INFOBULLE)
       .on('mouseover', annulerFermeture)
       .on('mouseout', planifierFermeture)
       .on('click', function () { fermerEventail(); openPanel(poi, groupe); })
       .addTo(map);
+    nommerMarqueur(satellite, poi.nom);
     elements.push(satellite);
   });
 }
@@ -389,18 +403,23 @@ function redessinerMarqueurs() {
   }, SEUIL_REGROUPEMENT);
 
   groupes.forEach(function (groupe) {
-    var marker;
+    var marker, nom;
     if (groupe.pois.length === 1) {
       var poi = groupe.pois[0];
-      marker = L.marker(poi.position, { icon: iconeLieu(poi), title: poi.nom })
+      nom = poi.nom;
+      marker = L.marker(poi.position, { icon: iconeLieu(poi) })
+        .bindTooltip(poi.nom, INFOBULLE)
         .on('click', function () { openPanel(poi); });
     } else {
-      marker = L.marker(groupe.position, { icon: iconeGroupe(groupe), title: groupe.pois.length + ' lieux' })
+      // Pas d'info-bulle sur un groupe : c'est son déploiement, au survol, qui montre les noms
+      nom = groupe.pois.length + ' lieux';
+      marker = L.marker(groupe.position, { icon: iconeGroupe(groupe) })
         .on('click', function () { cliquerGroupe(groupe); })
         .on('mouseover', function () { ouvrirEventail(groupe); })
         .on('mouseout', planifierFermeture);
     }
     marker.addTo(map);
+    nommerMarqueur(marker, nom);
     markers.push(marker);
   });
 }
