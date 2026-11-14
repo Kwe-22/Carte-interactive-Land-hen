@@ -240,6 +240,9 @@ function closePanel() {
 }
 
 document.getElementById('panel-close').addEventListener('click', closePanel);
+// Le panneau se referme dès qu'on fait glisser la carte (le recentrage automatique à l'ouverture d'une fiche
+// n'est pas un glissement : Leaflet n'envoie « dragstart » que pour un déplacement fait par la personne)
+map.on('dragstart', closePanel);
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closePanel();
 });
