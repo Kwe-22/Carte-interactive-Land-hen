@@ -74,10 +74,11 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, "Se
   width: 340px; max-width: 100%; box-sizing: border-box;
   background: #fff; color: #1d1d1f; overflow-y: auto;
   box-shadow: -2px 0 12px rgba(0,0,0,.35);
-  transform: translateX(105%); transition: transform .25s ease;
-  visibility: hidden;
+  transform: translateX(105%); visibility: hidden;
+  /* Fermeture : glisse vers la droite un peu plus vite qu'à l'ouverture, puis se masque à la fin */
+  transition: transform .18s ease-in, visibility 0s linear .18s;
 }
-#panel.open { transform: translateX(0); visibility: visible; }
+#panel.open { transform: translateX(0); visibility: visible; transition: transform .25s ease, visibility 0s; }
 
 #panel-close {
   position: absolute; top: 10px; right: 10px; width: 34px; height: 34px;
